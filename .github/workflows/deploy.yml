@@ -1,0 +1,40 @@
+name: Deploy Nim Application
+
+on:
+  workflow_dispatch
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref }}
+          
+      - name: Set up Nim
+        uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: '2.x'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compile Nim code
+        run: nim js -d:release counter.nim
+
+      - name: Set up Git for deployment
+        env:
+          ATTR_NAME: 'github-actions[bot]'
+          ATTR_EMAIL: 'github-actions[bot]@users.noreply.github.com'
+        run: |
+          git config --global user.name "$ATTR_NAME"
+          git config --global user.email "$ATTR_EMAIL"
+
+      - name: Commit and push changes
+        run: |
+          git add counter.js
+          git commit -m "build: update compiled binaries"
+          git push origin main:deploy --force
+
